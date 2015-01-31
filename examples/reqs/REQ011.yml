@@ -1,0 +1,11 @@
+active: true
+derived: false
+level: 1.1
+links: []
+normative: true
+note: You don’t have to implement this
+rationale: The Bar costs almost nothing so use it
+ref: ''
+reviewed: null
+text: |
+  If the Bar is gone, thou SHALT not pass

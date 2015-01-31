@@ -1,0 +1,11 @@
+active: true
+derived: false
+level: 1.0
+links: []
+normative: true
+note: Not bad huh
+rationale: Because it is
+ref: ''
+reviewed: null
+text: |
+  The Foo SHALL be Bar
