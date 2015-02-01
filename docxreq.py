@@ -84,11 +84,10 @@ class Document(object):
             except StopIteration:
                 break
 
-        for key in reqs:
-            if key not in input_reqs:
-                # delete
-                uid = prefix + '{:0>3d}'.format(key)
-                doc.remove_item(uid)
-                print('delete requirement')
+        for key in (set(reqs) - set(input_reqs)):
+            # delete
+            uid = prefix + '{:0>3d}'.format(key)
+            doc.remove_item(uid)
+            print('delete requirement')
 
         print(doc.items)
