@@ -5,11 +5,9 @@ except ImportError:
 import zipfile
 import doorstop
 
-
 """
 Extract requirements from semi-structured MS Word (.docx) document
 """
-
 WORD_NAMESPACE = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 PARA = WORD_NAMESPACE + 'p'
 
@@ -44,10 +42,7 @@ class Document(object):
                 if text == 'REQ_TYPE':
                     prefix = self._read_next_and_forward(paragraph)
                     parent = self._read_next(paragraph)
-                    if parent == '':
-                        treepath = [self.repopath]
-                    else:
-                        treepath = [self.repopath, parent]
+                    treepath = [self.repopath] if parent == '' else [self.repopath, parent]
 
                     try:
                         doc = self.tree.create_document(path='/'.join(treepath),
