@@ -23,8 +23,13 @@ class Document(object):
         self.tree = doorstop.build(root=repopath)
 
     def _read_next(self, parg_iterator):
-        text = next(parg_iterator)
-        return ''.join([x for x in text.itertext()])
+        next_parg = next(parg_iterator)
+        return ''.join([x for x in next_parg.itertext()])
+
+    def _read_next_and_forward(self, parg_iterator):
+        text = self._read_next(parg_iterator)
+        next(parg_iterator)
+        return text
 
     def sync_requirements(self):
         paragraph = self.doctree.getiterator(PARA)
@@ -37,8 +42,7 @@ class Document(object):
                     continue
 
                 if text == 'REQ_TYPE':
-                    prefix = self._read_next(paragraph)
-                    next(paragraph)
+                    prefix = self._read_next_and_forward(paragraph)
                     parent = self._read_next(paragraph)
                     if parent == '':
                         treepath = [self.repopath]
@@ -57,7 +61,7 @@ class Document(object):
 
                 elif text == 'REQ_NUM':
                     for key in ['REQ_NUM', 'REQ_TEXT', 'REQ_RAT', 'REQ_NOTE']:
-                        field = self._read_next(paragraph)
+                        field = self._read_next_and_forward(paragraph)
 
                         if key == 'REQ_NUM':
                             num = int(field)
@@ -78,8 +82,6 @@ class Document(object):
                             item.set(name='rationale', value=field)
                         elif key == 'REQ_NOTE':
                             item.set(name='note', value=field)
-
-                        next(paragraph)
 
             except StopIteration:
                 break
