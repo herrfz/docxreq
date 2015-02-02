@@ -55,7 +55,7 @@ class Document(object):
                                     [x.uid for x in doc.items]))
 
                 elif text == 'REQ_NUM':
-                    for key in ['REQ_NUM', 'REQ_TEXT', 'REQ_RAT', 'REQ_NOTE']:
+                    for key in ['REQ_NUM', 'REQ_TEXT', 'REQ_RATIO', 'REQ_NOTE']:
                         field = self._read_next_and_forward(paragraph)
 
                         if key == 'REQ_NUM':
@@ -73,7 +73,7 @@ class Document(object):
 
                         elif key == 'REQ_TEXT':
                             item.text = field
-                        elif key == 'REQ_RAT':
+                        elif key == 'REQ_RATIO':
                             item.set(name='rationale', value=field)
                         elif key == 'REQ_NOTE':
                             item.set(name='note', value=field)
