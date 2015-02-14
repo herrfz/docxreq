@@ -1,7 +1,8 @@
 active: true
 derived: false
 level: 1.2
-links: []
+links:
+- REQ001: null
 normative: true
 note: You don’t have to implement this
 rationale: The Bar costs almost nothing so use it

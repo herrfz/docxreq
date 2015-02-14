@@ -67,8 +67,10 @@ def process_document(repopath, tree, doctree, docfun=_create):
                                 [x.uid for x in doc.items]))
 
             elif text == 'REQ_NUM':
-                for key in ['REQ_NUM', 'REQ_TEXT', 'REQ_RATIO', 'REQ_NOTE']:
+                for key in ['REQ_NUM', 'REQ_LINKS', 'REQ_TEXT', 'REQ_RATIO', 'REQ_NOTE']:
                     field = _read_next_and_forward(paragraph)
+                    if not field:
+                        continue
 
                     if key == 'REQ_NUM':
                         num = int(field)
@@ -82,6 +84,11 @@ def process_document(repopath, tree, doctree, docfun=_create):
                             item = doc.find_item(uid)
                             print('update requirement')
                         input_reqs.append(num)
+
+                    elif key == 'REQ_LINKS':
+                        links = [x.strip() for x in field.split(',')]
+                        for link in links:
+                            item.link(link)
 
                     elif key == 'REQ_TEXT':
                         item.text = field
@@ -118,6 +125,8 @@ while True:
         process_document(repopath, tree, doctree, _create)
         more = str(input('Add more? '))
         if more == 'n':
+            for issue in tree.issues:
+                print(issue)
             break
         else:
             continue
