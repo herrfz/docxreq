@@ -1,16 +1,23 @@
+"""
+Extract requirements from semi-structured MS Word (.docx) document
+"""
+
 try:
     from xml.etree.cElementTree import XML
 except ImportError:
     from xml.etree.ElementTree import XML
 import zipfile
 import doorstop
+import readline
+import argparse
 from doorstop.common import DoorstopError
 
-"""
-Extract requirements from semi-structured MS Word (.docx) document
-"""
-WORD_NAMESPACE = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
-PARA = WORD_NAMESPACE + 'p'
+
+def get_xml_tree(docpath):
+    document = zipfile.ZipFile(docpath)
+    xml_content = document.read('word/document.xml')
+    document.close()
+    return XML(xml_content)
 
 def _read_next(parg_iterator):
     next_parg = next(parg_iterator)
@@ -39,6 +46,8 @@ def _find(tree, path, value, parent):
 
 
 def process_document(repopath, tree, doctree, docfun=_create):
+    WORD_NAMESPACE = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    PARA = WORD_NAMESPACE + 'p'
     paragraph = doctree.getiterator(PARA)
     input_reqs = []
     reqs = {}
@@ -107,30 +116,50 @@ def process_document(repopath, tree, doctree, docfun=_create):
             doc.remove_item(uid)
             print('delete requirement')
 
-        print(doc.items)
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Parse .docx documents into Doorstop files')
+    parser.add_argument('repopath', type=str, help='path to the requirement tree')
+    args = parser.parse_args()
 
-repopath = './examples/reqs' # TODO
-tree = doorstop.build(root=repopath)
-print('On tree {}'.format(repopath))
-print(tree)
+    readline.parse_and_bind('tab: complete')
+    readline.parse_and_bind('set editing-mode vi')
 
-while True:
-    try:
-        docpath = input('Add document: ')
-        document = zipfile.ZipFile(docpath)
-        xml_content = document.read('word/document.xml')
-        document.close()
-        doctree = XML(xml_content)
-        process_document(repopath, tree, doctree, _create)
-        more = str(input('Add more? '))
-        if more == 'n':
-            for issue in tree.issues:
-                print(issue)
+    tree = doorstop.build(root=args.repopath)
+    print('On tree {}'.format(args.repopath))
+    print(tree)
+
+    while True:
+        try:
+            print('1. Add document')
+            print('2. Update document')
+            print('3. Analyze requirement tree')
+            print('4. Quit')
+            select = int(input('> '))
+
+            if select == 1:
+                docpath = input('Document path: ')
+                doctree = get_xml_tree(docpath)
+                process_document(args.repopath, tree, doctree, _create)
+
+            elif select == 2:
+                docpath = input('Document path: ')
+                doctree = get_xml_tree(docpath)
+                process_document(args.repopath, tree, doctree, _find)
+
+            elif select == 3:
+                for issue in tree.issues:
+                    print(issue)
+
+            elif select == 4:
+                break
+
+            else:
+                continue
+
+        except KeyboardInterrupt:
             break
-        else:
-            continue
 
-    except FileNotFoundError:
-        print('File not found!')
-        continue
+        except Exception as e:
+            print(str(e))
+            continue
