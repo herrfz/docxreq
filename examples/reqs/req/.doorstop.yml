@@ -1,4 +1,5 @@
 settings:
   digits: 3
+  parent: APP
   prefix: REQ
   sep: ''
