@@ -3,7 +3,6 @@ derived: false
 level: 1.2
 links:
 - APP001: null
-- REQ001: null
 normative: true
 note: You don’t have to implement this
 rationale: The Bar costs almost nothing so use it

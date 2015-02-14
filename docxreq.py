@@ -13,12 +13,37 @@ import argparse
 from doorstop.common import DoorstopError
 
 
-def get_xml_tree(docpath):
-    document = zipfile.ZipFile(docpath)
+'''
+.docx parser utility functions
+'''
+def get_xml_tree(docxpath):
+    document = zipfile.ZipFile(docxpath)
     xml_content = document.read('word/document.xml')
     document.close()
     return XML(xml_content)
 
+'''
+Doorstop wrapper functions
+'''
+def _create(tree, path, value, parent):
+    try:
+        doc = tree.create_document(path=path, value=value, parent=parent)
+    except DoorstopError as exc:
+        raise exc
+    else:
+        return doc
+
+def _find(tree, path, value, parent):
+    try:
+        doc = tree.find_document(value)
+    except DoorstopError as exc:
+        raise exc
+    else:
+        return doc
+
+'''
+Processing functions: read .docx and entry to Doorstop
+'''
 def _read_next(parg_iterator):
     next_parg = next(parg_iterator)
     return ''.join([x for x in next_parg.itertext()])
@@ -28,27 +53,10 @@ def _read_next_and_forward(parg_iterator):
     next(parg_iterator)
     return text
 
-def _create(tree, path, value, parent):
-    try:
-        doc = tree.create_document(path=path, value=value, parent=parent)
-    except DoorstopError as e:
-        raise e
-    else:
-        return doc
-
-def _find(tree, path, value, parent):
-    try:
-        doc = tree.find_document(value)
-    except DoorstopError as e:
-        raise e
-    else:
-        return doc
-
-
 def process_document(repopath, tree, doctree, docfun=_create):
-    WORD_NAMESPACE = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
-    PARA = WORD_NAMESPACE + 'p'
-    paragraph = doctree.getiterator(PARA)
+    word_namespace = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    para = word_namespace + 'p'
+    paragraph = doctree.getiterator(para)
     input_reqs = []
     reqs = {}
 
@@ -68,18 +76,16 @@ def process_document(repopath, tree, doctree, docfun=_create):
                                  path=treepath,
                                  value=prefix,
                                  parent=parent)
-                except Exception as e:
-                    print(str(e))
+                except Exception as exc:
+                    print(str(exc))
                     break
 
-                reqs = dict(zip([x.number for x in doc.items], 
+                reqs = dict(zip([x.number for x in doc.items],
                                 [x.uid for x in doc.items]))
 
             elif text == 'REQ_NUM':
                 for key in ['REQ_NUM', 'REQ_LINKS', 'REQ_TEXT', 'REQ_RATIO', 'REQ_NOTE']:
                     field = _read_next_and_forward(paragraph)
-                    if not field:
-                        continue
 
                     if key == 'REQ_NUM':
                         num = int(field)
@@ -95,7 +101,8 @@ def process_document(repopath, tree, doctree, docfun=_create):
                         input_reqs.append(num)
 
                     elif key == 'REQ_LINKS':
-                        links = [x.strip() for x in field.split(',')]
+                        item.links = [] # first remove all links
+                        links = [x.strip() for x in field.split(',') if x != '']
                         for link in links:
                             item.link(link)
 
@@ -110,7 +117,7 @@ def process_document(repopath, tree, doctree, docfun=_create):
             break
 
     if reqs:
-        for key in (set(reqs) - set(input_reqs)):
+        for key in set(reqs) - set(input_reqs):
             # delete
             uid = prefix + '{:0>3d}'.format(key)
             doc.remove_item(uid)
@@ -118,16 +125,16 @@ def process_document(repopath, tree, doctree, docfun=_create):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Parse .docx documents into Doorstop files')
-    parser.add_argument('repopath', type=str, help='path to the requirement tree')
-    args = parser.parse_args()
+    PARSER = argparse.ArgumentParser(description='Parse .docx documents into Doorstop files')
+    PARSER.add_argument('repopath', type=str, help='path to the requirement tree')
+    ARGS = PARSER.parse_args()
 
     readline.parse_and_bind('tab: complete')
     readline.parse_and_bind('set editing-mode vi')
 
-    tree = doorstop.build(root=args.repopath)
-    print('On tree {}'.format(args.repopath))
-    print(tree)
+    REQTREE = doorstop.build(root=ARGS.repopath)
+    print('On tree {}'.format(ARGS.repopath))
+    print(REQTREE)
 
     while True:
         try:
@@ -135,23 +142,23 @@ if __name__ == '__main__':
             print('2. Update document')
             print('3. Analyze requirement tree')
             print('4. Quit')
-            select = int(input('> '))
+            SEL = int(input('> '))
 
-            if select == 1:
-                docpath = input('Document path: ')
-                doctree = get_xml_tree(docpath)
-                process_document(args.repopath, tree, doctree, _create)
+            if SEL == 1:
+                DOCPATH = input('Document path: ')
+                DOCTREE = get_xml_tree(DOCPATH)
+                process_document(ARGS.repopath, REQTREE, DOCTREE, _create)
 
-            elif select == 2:
-                docpath = input('Document path: ')
-                doctree = get_xml_tree(docpath)
-                process_document(args.repopath, tree, doctree, _find)
+            elif SEL == 2:
+                DOCPATH = input('Document path: ')
+                DOCTREE = get_xml_tree(DOCPATH)
+                process_document(ARGS.repopath, REQTREE, DOCTREE, _find)
 
-            elif select == 3:
-                for issue in tree.issues:
+            elif SEL == 3:
+                for issue in REQTREE.issues:
                     print(issue)
 
-            elif select == 4:
+            elif SEL == 4:
                 break
 
             else:
@@ -160,6 +167,6 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             break
 
-        except Exception as e:
-            print(str(e))
+        except Exception as exc:
+            print(str(exc))
             continue
