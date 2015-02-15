@@ -13,37 +13,33 @@ import argparse
 from doorstop.common import DoorstopError
 
 
-'''
-.docx parser utility functions
-'''
+# .docx parser utility functions
 def get_xml_tree(docxpath):
     document = zipfile.ZipFile(docxpath)
     xml_content = document.read('word/document.xml')
     document.close()
     return XML(xml_content)
 
-'''
-Doorstop wrapper functions
-'''
+# Doorstop wrapper functions
+def wrapdoorstop(func):
+    def wrapper(*args, **kwargs):
+        try:
+            doc = func(*args, **kwargs)
+        except DoorstopError as exc:
+            raise exc
+        else:
+            return doc
+    return wrapper
+
+@wrapdoorstop
 def _create(tree, path, value, parent):
-    try:
-        doc = tree.create_document(path=path, value=value, parent=parent)
-    except DoorstopError as exc:
-        raise exc
-    else:
-        return doc
+    return tree.create_document(path=path, value=value, parent=parent)
 
+@wrapdoorstop
 def _find(tree, path, value, parent):
-    try:
-        doc = tree.find_document(value)
-    except DoorstopError as exc:
-        raise exc
-    else:
-        return doc
+    return tree.find_document(value)
 
-'''
-Processing functions: read .docx and entry to Doorstop
-'''
+#Processing functions: read .docx and entry to Doorstop
 def _read_next(parg_iterator):
     next_parg = next(parg_iterator)
     return ''.join([x for x in next_parg.itertext()])
